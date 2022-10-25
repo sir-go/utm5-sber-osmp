@@ -13,15 +13,6 @@ import (
 
 const DefaultConfFile = "config.toml"
 
-//func StringSliceContains(sl []string, item string) bool {
-//	for _, i := range sl {
-//		if i == item {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
 func RightPadID(prefix int, id int, totalLen int) (int64, error) {
 	idStr := strconv.Itoa(id)
 	prefixStr := strconv.Itoa(prefix)

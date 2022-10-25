@@ -19,12 +19,6 @@ func (s *Server) Run() {
 	//gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 
-	// set X-Request-Id in nginx.conf.d/conf
-	//  location / {
-	//      proxy_pass http://upstream;
-	//      proxy_set_header X-Request-Id $pid-$msec-$remote_addr-$request_length;
-	//  }
-
 	r.Use(
 		func(c *gin.Context) { c.Request.URL.RawQuery = strings.ToLower(c.Request.URL.RawQuery) },
 		gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {

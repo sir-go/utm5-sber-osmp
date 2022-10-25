@@ -25,25 +25,25 @@ func GetBillingByExtID(extId string) (billing *CfgBillingPrefix, aidInt int) {
 const UTMOnceServiceType = 1
 
 type (
-	rAid struct {
+	RetAid struct {
 		Aid int `json:"aid"`
 	}
 
-	rUid struct {
+	RetUid struct {
 		Uid int `json:"user_id"`
 	}
 
-	rUInfo struct {
+	RetUInfo struct {
 		Name       string `json:"full_name"`
 		Address    string `json:"act_address"`
 		FlatNumber string `json:"flat_number"`
 	}
 
-	rBalance struct {
+	RetBalance struct {
 		Balance float64 `json:"balance"`
 	}
 
-	rAccountServices struct {
+	RetAccountServices struct {
 		Slinks []struct {
 			ServiceID   int     `json:"service_id"`
 			ServiceType int     `json:"service_type"`
@@ -51,11 +51,11 @@ type (
 		} `json:"slinks"`
 	}
 
-	rOnceServiceCost struct {
+	RetOnceServiceCost struct {
 		Cost float64 `json:"cost"`
 	}
 
-	rPayReport struct {
+	RetPayReport struct {
 		Rows []struct {
 			UtmPayId   int     `json:"id"`
 			BankPayId  string  `json:"payment_ext_number"`
@@ -66,7 +66,7 @@ type (
 		} `json:"rows"`
 	}
 
-	rPayId struct {
+	RetPayId struct {
 		UtmPayId int `json:"payment_transaction_id"`
 	}
 
@@ -97,7 +97,7 @@ func (u *UtmApi) call(method string, args UtmArgs, target interface{}) (err erro
 }
 
 func (u *UtmApi) GetAidByExtID(extId string) (int, error) {
-	o := new(rAid)
+	o := new(RetAid)
 	if err := u.call("rpcf_is_account_external_id_used",
 		UtmArgs{"external_id": extId}, o); err != nil {
 		return 0, err
@@ -106,7 +106,7 @@ func (u *UtmApi) GetAidByExtID(extId string) (int, error) {
 }
 
 func (u *UtmApi) GetUidByAid(aid int) (int, error) {
-	o := new(rUid)
+	o := new(RetUid)
 	if err := u.call("rpcf_get_user_by_account",
 		UtmArgs{"account_id": aid}, o); err != nil {
 		return 0, err
@@ -115,7 +115,7 @@ func (u *UtmApi) GetUidByAid(aid int) (int, error) {
 }
 
 func (u *UtmApi) GetUserInfo(aid int) (string, string, error) {
-	o := new(rUInfo)
+	o := new(RetUInfo)
 	if err := u.call("rpcf_get_userinfo",
 		UtmArgs{"user_id": aid}, o); err != nil {
 		return "", "", err
@@ -127,7 +127,7 @@ func (u *UtmApi) GetUserInfo(aid int) (string, string, error) {
 }
 
 func (u *UtmApi) GetBalance(aid int) (float64, error) {
-	o := new(rBalance)
+	o := new(RetBalance)
 	if err := u.call("rpcf_get_accountinfo",
 		UtmArgs{"account_id": aid}, o); err != nil {
 		return 0.0, err
@@ -136,8 +136,8 @@ func (u *UtmApi) GetBalance(aid int) (float64, error) {
 	return o.Balance, nil
 }
 
-func (u *UtmApi) GetPayments(uid, aid int, timeStart time.Time) (*rPayReport, error) {
-	o := new(rPayReport)
+func (u *UtmApi) GetPayments(uid, aid int, timeStart time.Time) (*RetPayReport, error) {
+	o := new(RetPayReport)
 	if err := u.call("rpcf_payments_report_new",
 		UtmArgs{"user_id": uid, "account_id": aid, "time_start": timeStart.Unix()}, o); err != nil {
 		return nil, err
@@ -146,8 +146,8 @@ func (u *UtmApi) GetPayments(uid, aid int, timeStart time.Time) (*rPayReport, er
 	return o, nil
 }
 
-func (u *UtmApi) GetServices(aid int) (*rAccountServices, error) {
-	o := new(rAccountServices)
+func (u *UtmApi) GetServices(aid int) (*RetAccountServices, error) {
+	o := new(RetAccountServices)
 	if err := u.call("rpcf_get_all_services_for_user",
 		UtmArgs{"account_id": aid}, o); err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (u *UtmApi) GetServices(aid int) (*rAccountServices, error) {
 }
 
 func (u *UtmApi) GetOnceServiceCost(sid int) (float64, error) {
-	o := new(rOnceServiceCost)
+	o := new(RetOnceServiceCost)
 	if err := u.call("rpcf_get_once_service",
 		UtmArgs{"sid": sid}, o); err != nil {
 		return 0.0, err
@@ -168,7 +168,7 @@ func (u *UtmApi) GetOnceServiceCost(sid int) (float64, error) {
 
 func (u *UtmApi) GetServicesCost(aid int) (cost float64, err error) {
 	var (
-		services *rAccountServices
+		services *RetAccountServices
 		onesCost float64
 	)
 
@@ -193,7 +193,7 @@ func (u *UtmApi) GetServicesCost(aid int) (cost float64, err error) {
 
 func (u *UtmApi) AddPayment(aid int, amount float64, dt time.Time,
 	comment string, bankPayId string) (int, error) {
-	o := new(rPayId)
+	o := new(RetPayId)
 	if err := u.call("rpcf_add_payment_for_account",
 		UtmArgs{
 			"account_id":         aid,

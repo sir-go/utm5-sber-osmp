@@ -16,16 +16,12 @@ const (
 	ErrTemporary
 	ErrUnknownRequest
 	ErrAccountNotFound
-	_ // ErrAccountIdWrongFormat
-	_ // ErrAccountDisabled
 	ErrPayIdWrongFormat
-	_ // ErrMaintenance
 	ErrPaymentAlreadyExists
 	ErrAmountWrongFormat
 	ErrAmountTooSmall
 	ErrAmountTooBig
 	ErrPayDateWrongFormat
-	_ // ErrOther = 300
 )
 
 type (
