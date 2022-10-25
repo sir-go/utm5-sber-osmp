@@ -9,9 +9,40 @@ the Sberbank-Online service with OSMP protocol.
    and returns an XML answer with account info
  - `payment` endpoint 
    - checks payment parameters
+   - checks if payment already exists in the billing by ID, payment sum and time
    - makes  payment in the billing system
    - sends a task for fiscal cheque issue to the pos terminal
    - returns an XML answer
+___
+### Requests parameters
+
+- `action` - what to do: `check` or `payment`
+  - `action=check`
+    - `account` - subscriber account ID
+  - `action=payment`
+    - `account` - subscriber account ID
+    - `amount` - payment sum
+    - `pay_id` - bank internal payment ID
+    - `pay_date` - payment time
+    - `contact` - (optional) contact e-mail of the payer
+___
+### Response XML fields
+
+#### check action
+- `CODE` - request status (!= 0 if errors are acquired)
+- `MESSAGE` - error additional message
+- `FIO` - subscriber's full name
+- `ADDRESS` - subscriber's home address
+- `BALANCE` - subscriber's account balance
+- `REC_SUM` - recommended payment sum
+- `INFO` - some additional subscriber's information
+
+#### payment action
+- `CODE` - request status (!= 0 if errors are acquired)
+- `MESSAGE` - error additional message
+- `EXT_ID` - billing internal payment ID
+- `REG_DATE` - payment registration time
+- `AMOUNT` - payment registered sum
 ___
 ### Configure
 
