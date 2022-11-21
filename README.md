@@ -1,7 +1,6 @@
-## OSMP payments accept server
-___
-### What it does
+# OSMP payments accept server
 
+## What it does
 This is a server for accepting payments from subscribers via 
 the Sberbank-Online service with OSMP protocol.
 
@@ -13,9 +12,8 @@ the Sberbank-Online service with OSMP protocol.
    - makes  payment in the billing system
    - sends a task for fiscal cheque issue to the pos terminal
    - returns an XML answer
-___
-### Requests parameters
 
+## Requests parameters
 - `action` - what to do: `check` or `payment`
   - `action=check`
     - `account` - subscriber account ID
@@ -25,10 +23,9 @@ ___
     - `pay_id` - bank internal payment ID
     - `pay_date` - payment time
     - `contact` - (optional) contact e-mail of the payer
-___
-### Response XML fields
 
-#### check action
+## Response XML fields
+### check action
 - `CODE` - request status (!= 0 if errors are acquired)
 - `MESSAGE` - error additional message
 - `FIO` - subscriber's full name
@@ -37,15 +34,14 @@ ___
 - `REC_SUM` - recommended payment sum
 - `INFO` - some additional subscriber's information
 
-#### payment action
+### payment action
 - `CODE` - request status (!= 0 if errors are acquired)
 - `MESSAGE` - error additional message
 - `EXT_ID` - billing internal payment ID
 - `REG_DATE` - payment registration time
 - `AMOUNT` - payment registered sum
-___
-### Configure
 
+## Configure
 Flag `-c` sets the configuration file path (default `./config.toml`).
 
 ```toml
@@ -112,8 +108,8 @@ Flag `-c` sets the configuration file path (default `./config.toml`).
     }
     '''
 ```
-___
-### Build & run
+
+## Build & run
 
 ```bash
 go mod download
