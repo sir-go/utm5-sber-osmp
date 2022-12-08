@@ -1,4 +1,5 @@
 # OSMP payments accept server
+[![Go](https://github.com/sir-go/utm5-sber-osmp/actions/workflows/go.yml/badge.svg)](https://github.com/sir-go/utm5-sber-osmp/actions/workflows/go.yml)
 
 ## What it does
 This is a service for accepting payments from subscribers via 
@@ -45,8 +46,21 @@ the Sberbank-Online service with OSMP protocol.
 Flag `-c` sets the configuration file path (default `./config.toml`).
 Example config - `config.toml`
 
+
+## Docker
+```bash
+docker build -t osmp .
+docker run --rm -it -v ${PWD}/config.toml:/config.toml:ro osmp:latest
+```
+
+## Tests
+```bash
+go test -v ./...
+gosec ./...
+```
+
 ## Build & run
 ```bash
 go mod download
-go build -o osmp ./cmd/osmp
+go build -o osmp ./cmd/main
 ```
