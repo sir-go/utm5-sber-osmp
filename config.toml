@@ -1,0 +1,65 @@
+[service]
+    host        = "localhost"               # service address
+    port        = 8483                      # service port
+    location    = "Europe/Moscow"           # timezone
+
+    [service.timeouts]                      # API handling timeouts
+        write   = "10s"
+        read    = "10s"
+        idle    = "30s"
+
+    [service.users]                         # basic auth simple tokens
+        "sber-osmp" = ""
+        "test"      = ""
+
+    [service.osmp]
+        check_info = '''Оплата за Интернет'''   # payment title
+        id_max_len = 18                         # maximum lenght for payment ID
+        pay_amount_min = 1                      # minimal payment value
+        pay_amount_max = 100000                 # maximum payment value
+
+[billing]                               # billing API credentials
+    api_url = ""                            # API URL
+    username = ""                           # billing system account username
+    password = ""                           # billing system account password
+    payment_method = 2                      # payments method code (2 - banks transfert)
+    payment_back_method = 8                 # payment return method code (8 - money-back)
+    payment_report_retro = "1h"             # the time interval for seeking previous payments
+
+    [billing.prefixes]                      # billings prefixes
+        tih = {api_prefix = "tih", pay_id_prefix = 352120, office = "Тихорецкий филиал" }
+        kor = {api_prefix = "kor", pay_id_prefix = 353180, office = "Кореновский филиал" }
+        # ...
+
+[atol]
+    api_url = ""                            # POS terminal API URL
+
+    # POS terminal API request template
+    # taskId - atol POS task UUID
+    # payId - billng payment ID
+    # amount - payment sum
+    # operator - operator name
+    # contact - client contact
+    # place - payment place
+    request_template = '''
+    {
+        "uuid": "{{.taskId}}",
+        "request": {
+            "type": "sell",
+            "items": [{
+                "tax": {"type": "none"},
+                "name": "абон. плата за Интернет [{{.payId}}]",
+                "type": "position",
+                "price": "{{printf "%.2f" .amount}}",
+                "amount": "{{printf "%.2f" .amount}}",
+                "quantity": 1
+            }],
+            "total": "{{printf "%.2f" .amount}}",
+            "operator": {"name": "{{.operator}}"},
+            "payments": [{"sum": {{printf "%.2f" .amount}}, "type": "electronically"}],
+            "clientInfo": {"emailOrPhone": "{{.contact}}"},
+            "paymentsPlace": "{{.place}}",
+            "electronically": true
+        }
+    }
+    '''

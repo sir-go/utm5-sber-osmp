@@ -1,7 +1,11 @@
-package main
+package service
 
 import (
 	"fmt"
+
+	zlog "github.com/rs/zerolog/log"
+
+	"utm5-sber-osmp/internal/utm"
 )
 
 type CheckResponse struct {
@@ -27,7 +31,7 @@ func (r *CheckResponse) XML() string {
 `, r.base.Code, r.base.Msg, r.Name, r.Address, r.Balance, r.RecSum, r.Info)
 }
 
-func Check(utm *UtmApi, extId string, uid int, aid int) (resp Response) {
+func Check(utmClient *utm.Client, extId string, uid int, aid int, chInfo string) (resp Response) {
 	var (
 		err     error
 		balance float64
@@ -36,12 +40,14 @@ func Check(utm *UtmApi, extId string, uid int, aid int) (resp Response) {
 
 	a := &CheckResponse{
 		base: BaseResponse{Code: ErrOk, Msg: "account exist"},
-		Info: CFG.OSMP.CheckInfo}
+		Info: chInfo}
+
+	LOG := zlog.With().Str("action", "check").Logger()
 
 	errChUserInfo := make(chan error, 0)
 	go func() {
-		if a.Name, a.Address, err = utm.GetUserInfo(uid); err != nil {
-			ehSkip(err)
+		if a.Name, a.Address, err = utmClient.GetUserInfo(uid); err != nil {
+			LOG.Err(err).Msg("get user info")
 			errChUserInfo <- err
 			return
 		}
@@ -50,7 +56,7 @@ func Check(utm *UtmApi, extId string, uid int, aid int) (resp Response) {
 
 	errChBalance := make(chan error, 0)
 	go func() {
-		if balance, err = utm.GetBalance(aid); err != nil {
+		if balance, err = utmClient.GetBalance(aid); err != nil {
 			errChBalance <- err
 			return
 		}
@@ -59,7 +65,7 @@ func Check(utm *UtmApi, extId string, uid int, aid int) (resp Response) {
 
 	errChCost := make(chan error, 0)
 	go func() {
-		if cost, err = utm.GetServicesCost(aid); err != nil {
+		if cost, err = utmClient.GetServicesCost(aid); err != nil {
 			errChCost <- err
 			return
 		}
@@ -72,13 +78,13 @@ func Check(utm *UtmApi, extId string, uid int, aid int) (resp Response) {
 
 	if err = <-errChBalance; err != nil {
 		balance = 0
-		ehSkip(err)
+		LOG.Err(err).Msg("check balance")
 	}
 	a.Balance = RoundBalance(balance)
 
 	if err = <-errChCost; err != nil {
-		ehSkip(err)
 		cost = 0
+		LOG.Err(err).Msg("check cost")
 	}
 
 	if balance < cost {
