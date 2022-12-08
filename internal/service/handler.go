@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"encoding/xml"
@@ -9,6 +9,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	zlog "github.com/rs/zerolog/log"
+
+	"utm5-sber-osmp/internal/atol"
+	"utm5-sber-osmp/internal/utm"
 )
 
 const (
@@ -44,7 +48,7 @@ func (r *BaseResponse) XML() string {
 `, r.Code, r.Msg)
 }
 
-func (s *Server) Handler(c *gin.Context) {
+func handle(c *gin.Context) {
 	var (
 		ok        bool
 		action    string
@@ -60,17 +64,17 @@ func (s *Server) Handler(c *gin.Context) {
 	)
 
 	user := c.GetString("user")
-	LOG.SetPrefix(fmt.Sprintf("[%s][@%s] ", c.Request.Header.Get("X-Request-Id"), user))
+	LOG := zlog.With().Str("user", user).Str("req-id", c.Request.Header.Get("X-Request-Id")).Logger()
+	LOG.Info().Msg("request")
 
 	defer func() {
 		header := c.Writer.Header()
 		header["Content-Type"] = []string{"application/xml; charset=utf-8"}
 		c.Status(http.StatusOK)
 		if _, err = c.Writer.WriteString(r.XML()); err != nil {
-			ehSkip(err)
+			LOG.Err(err).Msg("send response")
 			c.AbortWithStatus(http.StatusInternalServerError)
 		}
-		LOG.SetPrefix("")
 	}()
 
 	if action, ok = c.GetQuery("action"); !ok {
@@ -87,12 +91,17 @@ func (s *Server) Handler(c *gin.Context) {
 		return
 	}
 
-	utmPrefix, aid := GetBillingByExtID(account)
-	utm := &UtmApi{BillingPrefix: utmPrefix}
+	configValue, _ := c.Get("config")
+	config := configValue.(Config)
 
-	if utmPrefix.Api == "tih" {
-		if aid, err = utm.GetAidByExtID(account); err != nil {
-			ehSkip(err)
+	utmClient := utm.NewClient(config.Billing)
+
+	pref, aid := utmClient.GetPrefixByExtID(account)
+	utmClient.SetActivePrefix(pref)
+
+	if pref.Api == "tih" {
+		if aid, err = utmClient.GetAidByExtID(account); err != nil {
+			LOG.Err(err).Msg("get account")
 			r = &BaseResponse{Code: ErrAccountNotFound, Msg: "account not found: " + account}
 			return
 		}
@@ -102,8 +111,8 @@ func (s *Server) Handler(c *gin.Context) {
 		return
 	}
 
-	if uid, err = utm.GetUidByAid(aid); err != nil {
-		ehSkip(err)
+	if uid, err = utmClient.GetUidByAid(aid); err != nil {
+		LOG.Err(err).Msg("get userId")
 		return
 	}
 
@@ -114,7 +123,8 @@ func (s *Server) Handler(c *gin.Context) {
 
 	switch action {
 	case "check":
-		r = Check(utm, account, uid, aid)
+		r = Check(utmClient, account, uid, aid, config.OSMP.CheckInfo)
+
 	case "payment":
 		if p, ok = c.GetQuery("amount"); !ok {
 			r = &BaseResponse{Code: ErrUnknownRequest, Msg: "amount param not found"}
@@ -124,11 +134,11 @@ func (s *Server) Handler(c *gin.Context) {
 			r = &BaseResponse{Code: ErrAmountWrongFormat, Msg: "amount format is wrong"}
 			return
 		}
-		if amount < float64(CFG.OSMP.PayAmountMin) {
+		if amount < float64(config.OSMP.PayAmountMin) {
 			r = &BaseResponse{Code: ErrAmountTooSmall, Msg: "amount is too small"}
 			return
 		}
-		if amount > float64(CFG.OSMP.PayAmountMax) {
+		if amount > float64(config.OSMP.PayAmountMax) {
 			r = &BaseResponse{Code: ErrAmountTooBig, Msg: "amount is too big"}
 			return
 		}
@@ -146,7 +156,10 @@ func (s *Server) Handler(c *gin.Context) {
 			r = &BaseResponse{Code: ErrUnknownRequest, Msg: "pat_date param not found"}
 			return
 		}
-		if payDate, err = time.ParseInLocation(CFG.OSMP.TimeLayout, p, LOC); err != nil {
+
+		locationVal, _ := c.Get("tzLocation")
+		tzLocation := locationVal.(*time.Location)
+		if payDate, err = time.ParseInLocation("02.01.2006_15:04:05", p, tzLocation); err != nil {
 			r = &BaseResponse{Code: ErrPayDateWrongFormat, Msg: "pat_date format is wrong"}
 			return
 		}
@@ -160,7 +173,24 @@ func (s *Server) Handler(c *gin.Context) {
 				Amount:   amount}
 			return
 		}
-		r = Pay(utm, uid, aid, amount, bankPayId, payDate, user, c.Query("contact"))
+
+		atolClinet, err := atol.NewClient(config.Atol)
+		if err != nil {
+			LOG.Err(err).Msg("atol client init")
+			return
+		}
+
+		r = Pay(
+			utmClient,
+			atolClinet,
+			uid,
+			aid,
+			amount,
+			bankPayId,
+			payDate,
+			user,
+			c.Query("contact"),
+			config.OSMP.IdMaxLen)
 	default:
 		r = &BaseResponse{Code: ErrUnknownRequest, Msg: "action is unknown"}
 	}
