@@ -27,8 +27,8 @@ func RoundBalance(b float64) int {
 // -3999.0212813620074 -> 4000
 // -3999.36895 -> 4000
 // -3999.01234 -> 4000
-// 3999.36895 -> 3999
-// 3999.01234 -> 3999
+// 3999.36895 -> 4000
+// 3999.01234 -> 4000
 // -0.00021 -> 1
 // 0.00021 -> 1
 func RoundRecSum(b float64) int {
@@ -39,7 +39,7 @@ func RightPadID(prefix int, id int, totalLen int) (int64, error) {
 	idStr := strconv.Itoa(id)
 	prefixStr := strconv.Itoa(prefix)
 	gapLen := totalLen - len(prefixStr) - len(idStr)
-	if gapLen < 0 {
+	if gapLen < 1 {
 		return 0, errors.New("can't pad id - result is too big: " + prefixStr + idStr)
 	}
 	gapFormat := fmt.Sprintf("%%0%dd", gapLen)

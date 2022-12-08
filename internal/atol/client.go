@@ -31,6 +31,9 @@ func makeUUID() string {
 func (c *Client) makeBody(vars map[string]interface{}) (body *bytes.Buffer, err error) {
 	body = bytes.NewBuffer(make([]byte, 0))
 	err = c.reqTmpl.Execute(body, vars)
+	if body.Len() < 1 {
+		return nil, errors.New("empty body")
+	}
 	return
 }
 
