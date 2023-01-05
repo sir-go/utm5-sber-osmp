@@ -11,5 +11,5 @@ func main() {
 	flag.Parse()
 	config := LoadConfig(*fCfgPath)
 
-	initInterrupt(service.Run(config))
+	initInterrupt(service.Run(*config))
 }

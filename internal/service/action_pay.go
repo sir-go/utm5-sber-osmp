@@ -42,14 +42,14 @@ func Pay(utmClient *utm.Client, atolClient *atol.Client, uid int, aid int,
 
 	LOG := zlog.With().Str("action", "pay").Logger()
 
-	payReport, err := utmClient.GetPayments(uid, aid, dt.Add(-utmClient.PaymentReportRetro))
+	payReport, err := utmClient.GetPayments(uid, aid, dt)
 	if err != nil {
 		LOG.Err(err).Msg("get payments")
 		return
 	}
 
 	for _, reportRow := range payReport.Rows {
-		if reportRow.MethodId != utmClient.PaymentBackMethod &&
+		if !utmClient.IsPayMethodBack(reportRow.MethodId) &&
 			reportRow.BankPayId == bankPayId &&
 			time.Unix(reportRow.ActualDate, 0).Local().Equal(dt) &&
 			amount == reportRow.Amount {

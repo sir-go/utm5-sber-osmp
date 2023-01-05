@@ -174,7 +174,7 @@ func handle(c *gin.Context) {
 			return
 		}
 
-		atolClinet, err := atol.NewClient(config.Atol)
+		atolClient, err := atol.NewClient(config.Atol)
 		if err != nil {
 			LOG.Err(err).Msg("atol client init")
 			return
@@ -182,7 +182,7 @@ func handle(c *gin.Context) {
 
 		r = Pay(
 			utmClient,
-			atolClinet,
+			atolClient,
 			uid,
 			aid,
 			amount,

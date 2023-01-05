@@ -20,7 +20,7 @@ func TestClient_GetPrefixByExtID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{Config: Config{Prefixes: Prefixes}}
+			c := &Client{cfg: Config{Prefixes: Prefixes}}
 			gotPref, gotAidInt := c.GetPrefixByExtID(tt.extId)
 			if gotPref.Api != tt.wantApi {
 				t.Errorf("GetPrefixByExtID() gotPref.api = %v, want %v", gotPref.Api, tt.wantApi)
