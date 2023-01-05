@@ -12,7 +12,7 @@ import (
 	zlog "github.com/rs/zerolog/log"
 )
 
-func Run(conf *Config) (shutdown func() error) {
+func Run(conf Config) (shutdown func() error) {
 	//gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 

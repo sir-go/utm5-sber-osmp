@@ -14,7 +14,7 @@ const OnceServiceType = 1
 
 type (
 	Client struct {
-		Config
+		cfg          Config
 		activePrefix *Prefix
 	}
 
@@ -67,7 +67,7 @@ type (
 )
 
 func NewClient(config Config) *Client {
-	return &Client{Config: config}
+	return &Client{cfg: config}
 }
 
 func (c *Client) GetActivePrefix() Prefix {
@@ -82,13 +82,13 @@ func (c *Client) GetPrefixByExtID(extId string) (pref *Prefix, aidInt int) {
 	var err error
 	if HasDigitsOnly(extId) {
 		if aidInt, err = strconv.Atoi(extId); err != nil {
-			return c.Prefixes["tih"], 0
+			return c.cfg.Prefixes["tih"], 0
 		}
 		if aidInt < 12000 {
-			return c.Prefixes["kor"], aidInt
+			return c.cfg.Prefixes["kor"], aidInt
 		}
 	}
-	return c.Prefixes["tih"], 0
+	return c.cfg.Prefixes["tih"], 0
 }
 
 func (c *Client) call(method string, args Args, target interface{}) (err error) {
@@ -96,8 +96,8 @@ func (c *Client) call(method string, args Args, target interface{}) (err error) 
 	zlog.Debug().Str("method", prefMethod).Interface("args", args)
 
 	var res *jsonrpc.RPCResponse
-	client := jsonrpc.NewRPCClient(c.ApiURL)
-	client.SetBasicAuth(c.Username, c.Password)
+	client := jsonrpc.NewRPCClient(c.cfg.ApiURL)
+	client.SetBasicAuth(c.cfg.Username, c.cfg.Password)
 
 	if res, err = client.CallNamed(prefMethod, args); err != nil {
 		return
@@ -110,6 +110,10 @@ func (c *Client) call(method string, args Args, target interface{}) (err error) 
 	}
 
 	return res.GetObject(target)
+}
+
+func (c *Client) IsPayMethodBack(payMethodId int) bool {
+	return c.cfg.PaymentBackMethod == payMethodId
 }
 
 func (c *Client) GetAidByExtID(extId string) (int, error) {
@@ -152,10 +156,14 @@ func (c *Client) GetBalance(aid int) (float64, error) {
 	return o.Balance, nil
 }
 
-func (c *Client) GetPayments(uid, aid int, timeStart time.Time) (*RetPayReport, error) {
+func (c *Client) GetPayments(uid, aid int, timeEnd time.Time) (*RetPayReport, error) {
 	o := new(RetPayReport)
 	if err := c.call("rpcf_payments_report_new",
-		Args{"user_id": uid, "account_id": aid, "time_start": timeStart.Unix()}, o); err != nil {
+		Args{
+			"user_id":    uid,
+			"account_id": aid,
+			"time_start": timeEnd.Add(-c.cfg.PaymentReportRetro).Unix(),
+		}, o); err != nil {
 		return nil, err
 	}
 
@@ -215,7 +223,7 @@ func (c *Client) AddPayment(aid int, amount float64, dt time.Time,
 			"account_id":         aid,
 			"payment":            amount,
 			"payment_date":       dt.Unix(),
-			"payment_method":     c.PaymentMethod,
+			"payment_method":     c.cfg.PaymentMethod,
 			"admin_comment":      comment,
 			"payment_ext_number": bankPayId,
 		}, o); err != nil {
